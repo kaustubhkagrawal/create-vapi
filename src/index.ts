@@ -7,6 +7,7 @@ import * as shell from 'shelljs';
 import * as template from './utils/template';
 import chalk from 'chalk';
 import * as yargs from 'yargs';
+import { getPkgManager } from './utils/get-pkg-manager';
 
 const CHOICES = fs.readdirSync(path.join(__dirname, 'templates'));
 
@@ -30,6 +31,11 @@ const QUESTIONS = [
   }
 ];
 
+interface Answers {
+  template: string;
+  name: string;
+}
+
 const CURR_DIR = process.cwd();
 
 export interface TemplateConfig {
@@ -46,7 +52,7 @@ export interface CliOptions {
 }
 
 inquirer.prompt(QUESTIONS)
-  .then(answers => {
+  .then((answers: Answers) => {
 
     answers = Object.assign({}, answers, yargs.argv);
 
@@ -130,22 +136,18 @@ function isNode(options: CliOptions) {
 function postProcessNode(options: CliOptions) {
   shell.cd(options.tartgetPath);
 
-  let cmd = '';
 
-  if (shell.which('yarn')) {
-    cmd = 'yarn';
-  } else if (shell.which('npm')) {
-    cmd = 'npm install';
-  }
+  const pkg = getPkgManager() 
+  const cmd = pkg + ' install'
 
-  if (cmd) {
+  if (pkg) {
     const result = shell.exec(cmd);
 
     if (result.code !== 0) {
       return false;
     }
   } else {
-    console.log(chalk.red('No yarn or npm found. Cannot run installation.'));
+    console.log(chalk.red('No package manager found. Cannot run installation. You should install your packages manually'));
   }
 
   return true;
